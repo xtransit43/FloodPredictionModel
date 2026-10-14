@@ -1,8 +1,11 @@
+import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
 def load_data(filepath='data/flood.csv'):
-    """Loads dataset and separates features and target."""
+    """Loads dataset and separates features and target with fallback paths."""
+    if not os.path.exists(filepath) and os.path.exists('flood.csv'):
+        filepath = 'flood.csv'
     df = pd.read_csv(filepath)
     X = df.iloc[:, :-1]
     y = df.iloc[:, -1]
