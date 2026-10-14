@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Ridge
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
-from src.data_loader import load_data, get_train_test_splits
+from data_loader import load_data, get_train_test_splits
 
 class KMeansFeatureRegressor:
     def __init__(self, n_clusters=15, random_state=42):
