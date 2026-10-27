@@ -40,12 +40,12 @@ jobs:
 
     # 3. Build and Push Docker Image using Google Cloud Build
     - name: Build and Push Container
-      run: |-
+      run: |
         IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/app-repo/${{ env.IMAGE }}:${{ github.sha }}"
         LATEST_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/app-repo/${{ env.IMAGE }}:latest"
         
-        gcloud builds submit --tag "${{ '{' }}IMAGE_URL{{ '}' }}" .
-        gcloud container images add-tag "${{ '{' }}IMAGE_URL{{ '}' }}" "${{ '{' }}LATEST_URL{{ '}' }}" --quiet
+        gcloud builds submit --tag "${IMAGE_URL}" .
+        gcloud container images add-tag "${IMAGE_URL}" "${LATEST_URL}" --quiet
 
     # 4. Fetch GKE Cluster Credentials for kubectl
     - name: Get GKE Credentials
