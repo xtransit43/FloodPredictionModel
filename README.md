@@ -32,6 +32,9 @@
 - `models/`: Directory housing serialized models (`model_kmeans.pkl`, `model_rf.pkl`, `model_xgb.pkl`, `model_nn.keras`), feature metadata, and evaluation outputs.
 
 ---
+### Image
+![Alt text](FloodPredictionModel.png)
+
 
 ## Getting Started & Installation
 
