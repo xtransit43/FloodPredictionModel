@@ -17,7 +17,6 @@ jobs:
     name: Build and Deploy to GKE
     runs-on: ubuntu-latest
     
-    # Required permissions for OIDC token exchange
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -26,7 +25,7 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 1. Authenticate to Google Cloud using Workload Identity Federation (No keys needed!)
+    # 1. Authenticate to Google Cloud
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
@@ -38,26 +37,32 @@ jobs:
       run: |-
         gcloud --quiet auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-    # 3. Build and Push Docker Image using Google Cloud Build
-    - name: Build and Push Container
-      run: |
-        IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/app-repo/${{ env.IMAGE }}:${{ github.sha }}"
-        LATEST_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/app-repo/${{ env.IMAGE }}:latest"
-        
-        gcloud builds submit --tag "${IMAGE_URL}" .
-        gcloud container images add-tag "${IMAGE_URL}" "${LATEST_URL}" --quiet
+    # 3. Set up Docker Buildx (Required for advanced caching)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    # 4. Fetch GKE Cluster Credentials for kubectl
+    # 4. Build and Push Container using GitHub Runner + Layer Cache
+    - name: Build and Push Container
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/app-repo/${{ env.IMAGE }}:${{ github.sha }}
+          ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/app-repo/${{ env.IMAGE }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    # 5. Fetch GKE Cluster Credentials
     - name: Get GKE Credentials
       uses: google-github-actions/get-gke-credentials@v2
       with:
         cluster_name: ${{ env.CLUSTER_NAME }}
         location: ${{ env.REGION }}
 
-    # 5. Apply Kubernetes Manifests and Roll Out New Version
+    # 6. Apply Kubernetes Manifests and Roll Out New Version
     - name: Deploy to GKE
       run: |-
-        # Dynamically inject the unique git commit SHA into your k8s-deployment.yaml
         sed -i 's|image: .*app-repo/flood-dashboard:.*|image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/app-repo/${{ env.IMAGE }}:${{ github.sha }}|g' k8s-deployment.yaml
         
         kubectl apply -f k8s-deployment.yaml
