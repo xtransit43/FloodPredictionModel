@@ -54,12 +54,13 @@ def load_assets():
         _, _, X_test, _, y_test, _, _, _ = get_train_test_splits(X, y)
         return kmeans, rf, xgb, nn, features, df, X_test, y_test
     except Exception as e:
+        st.error(f"Error loading models or dataset: {e}")
         return None, None, None, None, None, None, None, None
 
 kmeans_model, rf_model, xgb_model, nn_model, feature_names, df, X_test, y_test = load_assets()
 
 if kmeans_model is None or feature_names is None or df is None:
-    st.error("⚠️ Model artifacts or dataset not found! Please run `python src/train.py` first to generate the models.")
+    st.error("⚠️ Model artifacts or dataset not found! Please check your `models/` directory structure.")
     st.stop()
 
 os.makedirs('models', exist_ok=True)
@@ -131,21 +132,22 @@ with col_left:
 with col_right:
     st.subheader("📈 K-Means Elbow Method Analysis")
     
+    # Cached elbow computation loop to prevent recalculating on every rerun
     @st.cache_data
-    def compute_elbow_inertias(_df):
-        X_sample = _df.iloc[:, :-1].sample(min(2000, len(_df)), random_state=42)
+    def compute_elbow(max_k=15):
+        X_sample = df.iloc[:, :-1].sample(min(2000, len(df)), random_state=42)
         inertias = []
-        k_range = list(range(2, 16))
+        k_range = range(2, max_k + 1)
         for k in k_range:
             km_temp = KMeans(n_clusters=k, random_state=42, n_init=5)
             km_temp.fit(X_sample)
             inertias.append(km_temp.inertia_)
-        return k_range, inertias
+        return list(k_range), inertias
 
-    k_range, inertias = compute_elbow_inertias(df)
+    k_vals, inertias = compute_elbow(max_k=16)
     
     fig2, ax2 = plt.subplots(figsize=(6, 4))
-    ax2.plot(k_range, inertias, marker='o', color='teal', lw=2)
+    ax2.plot(k_vals, inertias, marker='o', color='teal', lw=2)
     ax2.axvline(x=n_clusters_param, color='red', linestyle='--', label=f'Selected k={n_clusters_param}')
     ax2.set_xlabel("Number of Clusters (k)")
     ax2.set_ylabel("Inertia")
