@@ -51,7 +51,7 @@ def load_assets():
             
         features = joblib.load('models/feature_names.pkl')
         df, X, y = load_data('data/flood.csv')
-        _, _, X_test, _, y_test, _, _, y_test = get_train_test_splits(X, y)
+        _, _, X_test, _, y_test, _, _, _ = get_train_test_splits(X, y)
         return kmeans, rf, xgb, nn, features, df, X_test, y_test
     except Exception as e:
         return None, None, None, None, None, None, None, None
@@ -130,16 +130,22 @@ with col_left:
 
 with col_right:
     st.subheader("📈 K-Means Elbow Method Analysis")
-    X_sample = df.iloc[:, :-1].sample(min(2000, len(df)), random_state=42)
-    inertias = []
-    k_range = range(2, 16)
-    for k in k_range:
-        km_temp = KMeans(n_clusters=k, random_state=42, n_init=5)
-        km_temp.fit(X_sample)
-        inertias.append(km_temp.inertia_)
+    
+    @st.cache_data
+    def compute_elbow_inertias(_df):
+        X_sample = _df.iloc[:, :-1].sample(min(2000, len(_df)), random_state=42)
+        inertias = []
+        k_range = list(range(2, 16))
+        for k in k_range:
+            km_temp = KMeans(n_clusters=k, random_state=42, n_init=5)
+            km_temp.fit(X_sample)
+            inertias.append(km_temp.inertia_)
+        return k_range, inertias
+
+    k_range, inertias = compute_elbow_inertias(df)
     
     fig2, ax2 = plt.subplots(figsize=(6, 4))
-    ax2.plot(list(k_range), inertias, marker='o', color='teal', lw=2)
+    ax2.plot(k_range, inertias, marker='o', color='teal', lw=2)
     ax2.axvline(x=n_clusters_param, color='red', linestyle='--', label=f'Selected k={n_clusters_param}')
     ax2.set_xlabel("Number of Clusters (k)")
     ax2.set_ylabel("Inertia")
