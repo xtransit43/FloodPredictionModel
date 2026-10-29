@@ -39,6 +39,7 @@ st.set_page_config(
 )
 
 @st.cache_resource
+@st.cache_resource
 def load_assets():
     try:
         kmeans = joblib.load('models/model_kmeans.pkl')
@@ -53,14 +54,6 @@ def load_assets():
         df, X, y = load_data('data/flood.csv')
         _, _, X_test, _, y_test, _, _, _ = get_train_test_splits(X, y)
         
-        # Align X_test and y_test to guarantee matching lengths
-        if hasattr(X_test, 'align') and hasattr(y_test, 'align'):
-            X_test, y_test = X_test.align(y_test, join='inner', axis=0)
-        else:
-            min_len = min(len(X_test), len(y_test))
-            X_test = X_test[:min_len]
-            y_test = y_test[:min_len]
-
         return kmeans, rf, xgb, nn, features, df, X_test, y_test
     except Exception as e:
         st.error(f"Error loading models or dataset: {e}")
