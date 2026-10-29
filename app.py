@@ -52,6 +52,15 @@ def load_assets():
         features = joblib.load('models/feature_names.pkl')
         df, X, y = load_data('data/flood.csv')
         _, _, X_test, _, y_test, _, _, _ = get_train_test_splits(X, y)
+        
+        # Align X_test and y_test to guarantee matching lengths
+        if hasattr(X_test, 'align') and hasattr(y_test, 'align'):
+            X_test, y_test = X_test.align(y_test, join='inner', axis=0)
+        else:
+            min_len = min(len(X_test), len(y_test))
+            X_test = X_test[:min_len]
+            y_test = y_test[:min_len]
+
         return kmeans, rf, xgb, nn, features, df, X_test, y_test
     except Exception as e:
         st.error(f"Error loading models or dataset: {e}")
@@ -127,12 +136,11 @@ with col_left:
     chart_path_1 = 'models/chart_spread.png'
     fig.savefig(chart_path_1, bbox_inches='tight', dpi=150)
     plt.close(fig)
-    st.image(chart_path_1, use_container_width=True)
+    st.image(chart_path_1, width='stretch')
 
 with col_right:
     st.subheader("📈 K-Means Elbow Method Analysis")
     
-    # Cached elbow computation loop to prevent recalculating on every rerun
     @st.cache_data
     def compute_elbow(max_k=15):
         X_sample = df.iloc[:, :-1].sample(min(2000, len(df)), random_state=42)
@@ -156,13 +164,13 @@ with col_right:
     chart_path_2 = 'models/chart_elbow.png'
     fig2.savefig(chart_path_2, bbox_inches='tight', dpi=150)
     plt.close(fig2)
-    st.image(chart_path_2, use_container_width=True)
+    st.image(chart_path_2, width='stretch')
 
 st.markdown("---")
 
 # Evaluation Benchmark Statistics Section
 st.subheader("📐 Global Test Set Evaluation Statistics")
-st.markdown("Performance benchmarks computed across the holdout test set (`n=7,500` samples):")
+st.markdown(f"Performance benchmarks computed across the holdout test set (`n={len(X_test)}` samples):")
 
 @st.cache_data
 def compute_metrics():
@@ -175,10 +183,14 @@ def compute_metrics():
     
     metrics_list = []
     for name, y_pred in preds_test.items():
-        mse = mean_squared_error(y_test, y_pred)
+        # Ensure predictions and targets match shape
+        y_pred_flat = np.array(y_pred).flatten()
+        y_true_flat = np.array(y_test).flatten()
+        
+        mse = mean_squared_error(y_true_flat, y_pred_flat)
         rmse = np.sqrt(mse)
-        mae = mean_absolute_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
+        mae = mean_absolute_error(y_true_flat, y_pred_flat)
+        r2 = r2_score(y_true_flat, y_pred_flat)
         metrics_list.append({
             'Model Architecture': name,
             'MSE': f"{mse:.5f}",
@@ -189,4 +201,4 @@ def compute_metrics():
     return pd.DataFrame(metrics_list)
 
 metrics_df = compute_metrics()
-st.dataframe(metrics_df, use_container_width=True, hide_index=True)
+st.dataframe(metrics_df, width='stretch', hide_index=True)
