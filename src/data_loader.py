@@ -3,17 +3,17 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 def load_data(filepath='data/flood.csv'):
-    """Loads dataset, handles fallback paths, and cleans missing values jointly."""
+    """Loads dataset, handles fallback paths, cleans NaNs, and resets indices jointly."""
     if not os.path.exists(filepath) and os.path.exists('flood.csv'):
         filepath = 'flood.csv'
         
     df = pd.read_csv(filepath)
     
-    # Drop rows with missing values to prevent length mismatches downstream
+    # Drop rows with missing values and reset index jointly
     df = df.dropna().reset_index(drop=True)
     
-    X = df.iloc[:, :-1]
-    y = df.iloc[:, -1]
+    X = df.iloc[:, :-1].reset_index(drop=True)
+    y = df.iloc[:, -1].reset_index(drop=True)
     
     return df, X, y
 
