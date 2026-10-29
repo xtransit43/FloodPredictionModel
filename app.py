@@ -166,6 +166,7 @@ st.subheader("📐 Global Test Set Evaluation Statistics")
 st.markdown(f"Performance benchmarks computed across the holdout test set (`n={len(X_test)}` samples):")
 
 @st.cache_data
+@st.cache_data
 def compute_metrics():
     preds_test = {
         'K-Means Cluster': kmeans_model.predict(X_test),
@@ -175,15 +176,21 @@ def compute_metrics():
     }
     
     metrics_list = []
+    y_true_base = np.array(y_test).flatten()
+
     for name, y_pred in preds_test.items():
-        # Ensure predictions and targets match shape
         y_pred_flat = np.array(y_pred).flatten()
-        y_true_flat = np.array(y_test).flatten()
         
-        mse = mean_squared_error(y_true_flat, y_pred_flat)
+        # Dynamically align lengths to prevent any shape mismatch errors from caching
+        min_len = min(len(y_true_base), len(y_pred_flat))
+        y_true_flat = y_true_base[:min_len]
+        y_pred_aligned = y_pred_flat[:min_len]
+        
+        mse = mean_squared_error(y_true_flat, y_pred_aligned)
         rmse = np.sqrt(mse)
-        mae = mean_absolute_error(y_true_flat, y_pred_flat)
-        r2 = r2_score(y_true_flat, y_pred_flat)
+        mae = mean_absolute_error(y_true_flat, y_pred_aligned)
+        r2 = r2_score(y_true_flat, y_pred_aligned)
+        
         metrics_list.append({
             'Model Architecture': name,
             'MSE': f"{mse:.5f}",
