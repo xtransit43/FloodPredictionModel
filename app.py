@@ -95,7 +95,7 @@ pred_rf = float(rf_model.predict(input_df)[0])
 pred_xgb = float(xgb_model.predict(input_df)[0])
 pred_nn = float(nn_model.predict(input_df.to_numpy(), verbose=0).flatten()[0])
 
-st.subheader("🎯 Live Model Prediction Comparison")
+st.subheader("🎯 Live Model Flood Prediction Percentage Comparison")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric(label="🔵 K-Means Cluster", value=f"{pred_km:.2%}")
 c2.metric(label="🌲 Random Forest", value=f"{pred_rf:.2%}")
